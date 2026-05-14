@@ -85,6 +85,7 @@ export async function updateTeam(input: {
   name?: string;
   tagline?: string | null;
   demo_url?: string | null;
+  thumbnail_url?: string | null;
 }) {
   await assertAdmin();
   const admin = getAdminSupabase();
@@ -94,6 +95,9 @@ export async function updateTeam(input: {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.tagline !== undefined ? { tagline: input.tagline } : {}),
       ...(input.demo_url !== undefined ? { demo_url: input.demo_url } : {}),
+      ...(input.thumbnail_url !== undefined
+        ? { thumbnail_url: input.thumbnail_url }
+        : {}),
     })
     .eq("id", input.id);
   revalidatePath("/admin");

@@ -204,13 +204,19 @@ export function AdminDashboard({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <Row key={r.id} row={r} pending={pending} onDelete={() => onDelete(r)} onEdit={async (patch) => {
-                  startTransition(async () => {
-                    await updateTeam({ id: r.id, ...patch });
-                    toast("success", "Team updated.");
-                    router.refresh();
-                  });
-                }} />
+                <Row
+                  key={r.id}
+                  row={r}
+                  pending={pending}
+                  onDelete={() => onDelete(r)}
+                  onEdit={async (patch) => {
+                    startTransition(async () => {
+                      await updateTeam({ id: r.id, ...patch });
+                      toast("success", "Team updated.");
+                      router.refresh();
+                    });
+                  }}
+                />
               ))}
               {rows.length === 0 && (
                 <tr>
@@ -320,12 +326,18 @@ function Row({
   row: Row;
   pending: boolean;
   onDelete: () => void;
-  onEdit: (patch: { name?: string; tagline?: string | null; demo_url?: string | null }) => void;
+  onEdit: (patch: {
+    name?: string;
+    tagline?: string | null;
+    demo_url?: string | null;
+    thumbnail_url?: string | null;
+  }) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(row.name);
   const [tagline, setTagline] = useState(row.tagline ?? "");
   const [url, setUrl] = useState(row.demo_url ?? "");
+  const [thumb, setThumb] = useState(row.thumbnail_url ?? "");
 
   return (
     <tr className="border-t border-border-dark align-top">
@@ -354,12 +366,20 @@ function Row({
       </td>
       <td className="py-3 pr-4 max-w-[280px]">
         {editing ? (
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="(optional)"
-            className="input-dark text-[13px] py-1.5"
-          />
+          <div className="space-y-2">
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Demo URL (optional)"
+              className="input-dark text-[13px] py-1.5"
+            />
+            <input
+              value={thumb}
+              onChange={(e) => setThumb(e.target.value)}
+              placeholder="Thumbnail URL (optional) — e.g. /thumbnails/foo.png"
+              className="input-dark text-[12px] py-1.5"
+            />
+          </div>
         ) : row.demo_url ? (
           <a
             href={row.demo_url}
@@ -391,6 +411,7 @@ function Row({
                     name,
                     tagline: tagline || null,
                     demo_url: url.trim() ? url.trim() : null,
+                    thumbnail_url: thumb.trim() ? thumb.trim() : null,
                   });
                   setEditing(false);
                 }}
