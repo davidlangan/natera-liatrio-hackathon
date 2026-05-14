@@ -8,7 +8,28 @@ import { VOTES_REQUIRED } from "@/lib/constants";
 type TeamCardData = Pick<
   Team,
   "id" | "name" | "tagline" | "members" | "demo_url" | "thumbnail_url" | "summary"
->;
+> & {
+  /** Optional — older callers may not pass this; treated as false when absent. */
+  running_locally?: boolean;
+};
+
+const CARD_SUMMARY_MAX = 110;
+
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  // Trim back to the previous word boundary so we don't cut mid-word.
+  const slice = text.slice(0, max - 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${(lastSpace > 40 ? slice.slice(0, lastSpace) : slice).trimEnd()}…`;
+}
+
+function pickCardBlurb(team: TeamCardData): string | null {
+  if (team.tagline && team.tagline.trim().length > 0) return team.tagline;
+  if (team.summary && team.summary.trim().length > 0) {
+    return truncate(team.summary.trim(), CARD_SUMMARY_MAX);
+  }
+  return null;
+}
 
 export function TeamCard({
   team,
@@ -41,6 +62,13 @@ export function TeamCard({
   const interactive = !!onOpen;
   const isDark = variant === "dark";
   const showVote = !!onVote;
+  const blurb = pickCardBlurb(team);
+  const inPersonHint =
+    !team.demo_url
+      ? team.running_locally
+        ? "Running locally — see it at the event"
+        : "Demo materials to be shared at event"
+      : null;
 
   function handleClick(e: React.MouseEvent<HTMLDivElement>) {
     if (!interactive) return;
@@ -121,14 +149,14 @@ export function TeamCard({
             </span>
           )}
         </div>
-        {team.tagline && (
+        {blurb && (
           <p
             className={clsx(
               "text-[14px] leading-[1.5]",
               isDark ? "text-text-muted-dark" : "text-text-muted-light",
             )}
           >
-            {team.tagline}
+            {blurb}
           </p>
         )}
         <div className="flex flex-wrap gap-1.5">
@@ -171,6 +199,16 @@ export function TeamCard({
           >
             Open demo ↗
           </a>
+        )}
+        {showOpenLink && !team.demo_url && inPersonHint && (
+          <p
+            className={clsx(
+              "text-[13px] italic",
+              isDark ? "text-text-muted-dark" : "text-text-muted-light",
+            )}
+          >
+            {inPersonHint}
+          </p>
         )}
         {showVote && (
           <VoteButton

@@ -8,11 +8,18 @@ import { getAdminSupabase } from "@/lib/supabase/server";
 import { generatePreview, type PreviewResult } from "@/lib/url-preview";
 
 const CAPTAIN_COOKIE_PREFIX = "nh_captain_";
+const SUMMARY_MAX = 500;
+const THUMBNAIL_BUCKET = "team-thumbnails";
 
 export type RegisterFormState = {
   ok: boolean;
   error?: string;
-  fieldErrors?: Partial<Record<"name" | "members" | "demo_url" | "tagline", string>>;
+  fieldErrors?: Partial<
+    Record<
+      "name" | "members" | "demo_url" | "summary" | "thumbnail_url",
+      string
+    >
+  >;
   preview?: {
     team_id?: string;
     name: string;
@@ -21,6 +28,7 @@ export type RegisterFormState = {
     demo_url: string | null;
     thumbnail_url: string | null;
     summary: string | null;
+    running_locally: boolean;
   };
 };
 
@@ -40,6 +48,31 @@ function isValidUrl(raw: string): boolean {
   }
 }
 
+/**
+ * Only accept thumbnail URLs that point at our own Supabase Storage bucket.
+ * The form uploads via the anon key + permissive RLS policy; this guard
+ * prevents a malicious caller from setting `thumbnail_url` to an arbitrary
+ * domain (which next/image would happily proxy via remotePatterns wildcards).
+ */
+function isAllowedThumbnailUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const supabaseHost = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname;
+    } catch {
+      return null;
+    }
+  })();
+  if (!supabaseHost || url.hostname !== supabaseHost) return false;
+  return url.pathname.includes(`/${THUMBNAIL_BUCKET}/`);
+}
+
 export async function registerTeam(
   _prev: RegisterFormState,
   formData: FormData,
@@ -47,7 +80,14 @@ export async function registerTeam(
   const name = String(formData.get("name") ?? "").trim();
   const membersRaw = String(formData.get("members") ?? "");
   const demo_url = String(formData.get("demo_url") ?? "").trim();
-  const tagline = String(formData.get("tagline") ?? "").trim() || null;
+  const summary = String(formData.get("summary") ?? "").trim();
+  const runningLocallyRaw = String(formData.get("running_locally") ?? "");
+  const running_locally =
+    runningLocallyRaw === "on" ||
+    runningLocallyRaw === "true" ||
+    runningLocallyRaw === "1";
+  const thumbnailUploadUrl =
+    String(formData.get("thumbnail_upload_url") ?? "").trim() || null;
   const editingId = String(formData.get("editing_id") ?? "").trim() || null;
 
   const fieldErrors: RegisterFormState["fieldErrors"] = {};
@@ -56,19 +96,24 @@ export async function registerTeam(
     fieldErrors.name = "Team name must be 60 characters or fewer.";
   const members = parseMembers(membersRaw);
   if (members.length < 1) fieldErrors.members = "Add at least one member.";
-  if (members.length > 10)
-    fieldErrors.members = "Maximum of 10 members.";
+  if (members.length > 10) fieldErrors.members = "Maximum of 10 members.";
   // demo_url is optional. If supplied, it must at least parse as http(s).
   if (demo_url && !isValidUrl(demo_url))
     fieldErrors.demo_url = "Use an http(s) URL, or leave this field blank.";
-  if (tagline && tagline.length > 120)
-    fieldErrors.tagline = "Tagline must be 120 characters or fewer.";
+  if (!summary) {
+    fieldErrors.summary = "Demo Summary is required.";
+  } else if (summary.length > SUMMARY_MAX) {
+    fieldErrors.summary = `Summary must be ${SUMMARY_MAX} characters or fewer.`;
+  }
+  if (thumbnailUploadUrl && !isAllowedThumbnailUrl(thumbnailUploadUrl)) {
+    fieldErrors.thumbnail_url =
+      "Thumbnail URL must come from the team-thumbnails bucket.";
+  }
 
   if (Object.keys(fieldErrors).length) {
     return { ok: false, fieldErrors };
   }
 
-  // Check settings
   const admin = getAdminSupabase();
   const { data: settings } = await admin
     .from("settings")
@@ -96,10 +141,15 @@ export async function registerTeam(
     try {
       preview = await generatePreview(demoUrlValue);
     } catch {
-      // Treat any unexpected enrichment failure as "no preview available".
       preview = { summary: null, thumbnail_url: null, source: "fallback" };
     }
   }
+
+  // User-supplied summary always wins over the URL-preview-generated one.
+  const finalSummary = summary;
+  // User upload wins over the auto-grabbed thumbnail.
+  const finalThumbnailUrl = thumbnailUploadUrl ?? preview.thumbnail_url;
+
   const captainToken = crypto.randomBytes(24).toString("hex");
 
   let teamId = editingId;
@@ -110,7 +160,9 @@ export async function registerTeam(
       .eq("id", editingId)
       .maybeSingle();
     const cookieStore = await cookies();
-    const cookieToken = cookieStore.get(`${CAPTAIN_COOKIE_PREFIX}${editingId}`)?.value;
+    const cookieToken = cookieStore.get(
+      `${CAPTAIN_COOKIE_PREFIX}${editingId}`,
+    )?.value;
     if (!existing || existing.captain_token !== cookieToken) {
       return {
         ok: false,
@@ -123,19 +175,16 @@ export async function registerTeam(
         name,
         members,
         demo_url: demoUrlValue,
-        tagline,
-        thumbnail_url: preview.thumbnail_url,
-        summary: preview.summary,
+        // Legacy column — new submissions clear it; existing rows keep
+        // whatever they had unless the captain explicitly overwrote it.
+        tagline: null,
+        thumbnail_url: finalThumbnailUrl,
+        summary: finalSummary,
+        running_locally,
       })
       .eq("id", editingId);
     if (error) {
-      if (error.message.toLowerCase().includes("unique")) {
-        return {
-          ok: false,
-          fieldErrors: { name: "That team name is already taken." },
-        };
-      }
-      return { ok: false, error: error.message };
+      return mapTeamMutationError(error);
     }
   } else {
     const { data: inserted, error } = await admin
@@ -144,24 +193,16 @@ export async function registerTeam(
         name,
         members,
         demo_url: demoUrlValue,
-        tagline,
-        thumbnail_url: preview.thumbnail_url,
-        summary: preview.summary,
+        tagline: null,
+        thumbnail_url: finalThumbnailUrl,
+        summary: finalSummary,
+        running_locally,
         captain_token: captainToken,
       })
       .select("id, captain_token")
       .single();
     if (error) {
-      if (error.message.includes("registration_closed")) {
-        return { ok: false, error: "Registration is closed." };
-      }
-      if (error.message.toLowerCase().includes("unique")) {
-        return {
-          ok: false,
-          fieldErrors: { name: "That team name is already taken." },
-        };
-      }
-      return { ok: false, error: error.message };
+      return mapTeamMutationError(error);
     }
     teamId = inserted.id;
     const cookieStore = await cookies();
@@ -184,13 +225,43 @@ export async function registerTeam(
     preview: {
       team_id: teamId!,
       name,
-      tagline,
+      tagline: null,
       members,
       demo_url: demoUrlValue,
-      thumbnail_url: preview.thumbnail_url,
-      summary: preview.summary,
+      thumbnail_url: finalThumbnailUrl,
+      summary: finalSummary,
+      running_locally,
     },
   };
+}
+
+function mapTeamMutationError(error: {
+  message: string;
+}): RegisterFormState {
+  const msg = error.message ?? "";
+  if (msg.includes("registration_closed")) {
+    return { ok: false, error: "Registration is closed." };
+  }
+  if (msg.toLowerCase().includes("unique")) {
+    return {
+      ok: false,
+      fieldErrors: { name: "That team name is already taken." },
+    };
+  }
+  // Most likely cause when this fires in production: the 0003 migration
+  // hasn't been pasted into Supabase yet, so `running_locally` doesn't
+  // exist as a column.
+  if (
+    msg.toLowerCase().includes("running_locally") ||
+    /column .* does not exist/i.test(msg)
+  ) {
+    return {
+      ok: false,
+      error:
+        "Database isn't fully migrated yet — admin needs to run the 0003 migration in the Supabase SQL editor.",
+    };
+  }
+  return { ok: false, error: msg };
 }
 
 export async function confirmAndRedirect(teamId: string) {

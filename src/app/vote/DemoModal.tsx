@@ -8,7 +8,10 @@ import { VOTES_REQUIRED } from "@/lib/constants";
 type DemoModalTeam = Pick<
   Team,
   "id" | "name" | "tagline" | "members" | "summary" | "demo_url"
->;
+> & {
+  /** Optional — older callers may not pass this; treated as false when absent. */
+  running_locally?: boolean;
+};
 
 export function DemoModal({
   team,
@@ -104,6 +107,15 @@ export function DemoModal({
     ? "Remove vote for this team"
     : "Vote for this team";
   const hasSummary = !!team.summary && team.summary.trim().length > 0;
+  const hasTagline = !!team.tagline && team.tagline.trim().length > 0;
+  // Use the legacy tagline as the subtitle when present; otherwise leave the
+  // header clean — the full summary section below covers it.
+  const subtitle = hasTagline ? team.tagline : null;
+  const inPersonHint = !team.demo_url
+    ? team.running_locally
+      ? "Running locally — see it at the event."
+      : "Demo materials to be shared at the event."
+    : null;
 
   return (
     <div
@@ -129,9 +141,9 @@ export function DemoModal({
             >
               {team.name}
             </h2>
-            {team.tagline && (
+            {subtitle && (
               <p className="mt-2 text-text-muted-dark leading-[1.55]">
-                {team.tagline}
+                {subtitle}
               </p>
             )}
           </div>
@@ -167,6 +179,12 @@ export function DemoModal({
               {team.summary}
             </p>
           </section>
+        )}
+
+        {inPersonHint && (
+          <p className="mt-5 text-[14px] text-text-muted-dark italic">
+            {inPersonHint}
+          </p>
         )}
 
         <div className="mt-7 flex flex-wrap items-center gap-3">

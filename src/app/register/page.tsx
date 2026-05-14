@@ -28,16 +28,49 @@ export default async function RegisterPage({
         members: string[];
         demo_url: string | null;
         tagline: string | null;
+        summary: string | null;
+        running_locally: boolean;
+        thumbnail_url: string | null;
       }
     | undefined;
 
   if (editingId) {
     const admin = getAdminSupabase();
-    const { data: team } = await admin
+    // Tolerant select: if the 0003 migration hasn't been applied yet,
+    // `running_locally` will trip the column-missing error. Fall back to
+    // querying without it so editing still works for legacy rows.
+    let team:
+      | {
+          id: string;
+          name: string;
+          members: string[];
+          demo_url: string | null;
+          tagline: string | null;
+          summary: string | null;
+          thumbnail_url: string | null;
+          running_locally?: boolean;
+          captain_token: string | null;
+        }
+      | null = null;
+    const full = await admin
       .from("teams")
-      .select("id, name, members, demo_url, tagline, captain_token")
+      .select(
+        "id, name, members, demo_url, tagline, summary, thumbnail_url, running_locally, captain_token",
+      )
       .eq("id", editingId)
       .maybeSingle();
+    if (full.error) {
+      const fallback = await admin
+        .from("teams")
+        .select(
+          "id, name, members, demo_url, tagline, summary, thumbnail_url, captain_token",
+        )
+        .eq("id", editingId)
+        .maybeSingle();
+      team = fallback.data ?? null;
+    } else {
+      team = full.data ?? null;
+    }
     const cookieStore = await cookies();
     const cookieToken = cookieStore.get(`nh_captain_${editingId}`)?.value;
     if (team && team.captain_token && cookieToken === team.captain_token) {
@@ -47,6 +80,9 @@ export default async function RegisterPage({
         members: team.members,
         demo_url: team.demo_url,
         tagline: team.tagline,
+        summary: team.summary,
+        running_locally: !!team.running_locally,
+        thumbnail_url: team.thumbnail_url,
       };
     }
   }
@@ -68,8 +104,10 @@ export default async function RegisterPage({
             </span>
           </h1>
           <p className="mt-5 max-w-xl text-[16px] text-text-muted-dark leading-[1.6]">
-            One submission per team. Captains can edit until voting opens. We
-            auto-generate a thumbnail and a one-line summary from the demo URL.
+            One submission per team. Captains can edit until voting opens.
+            Have a live demo? Drop the URL and we'll try to auto-generate a
+            thumbnail. Running locally instead? Tick the box and tell us about
+            it in the summary.
           </p>
 
           <div className="mt-10">

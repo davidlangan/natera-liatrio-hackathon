@@ -11,9 +11,16 @@ export type Team = {
   name: string;
   members: string[];
   demo_url: string | null;
+  /**
+   * Legacy short label kept for back-compat with rows registered before the
+   * Demo Summary textarea replaced the tagline field. New submissions leave
+   * this null and rely on `summary` (truncated for cards, full in the modal).
+   */
   tagline: string | null;
   thumbnail_url: string | null;
   summary: string | null;
+  /** Captain marked the demo as in-person rather than supplying a URL. */
+  running_locally: boolean;
   captain_token: string | null;
   created_at: string;
   updated_at: string;
