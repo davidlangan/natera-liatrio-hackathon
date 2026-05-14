@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { BALLOT_COOKIE, VOTES_REQUIRED } from "@/lib/constants";
 import { verifyCookie } from "@/lib/hash";
 import { VoteGrid } from "./VoteGrid";
-import { TeamCard } from "@/components/TeamCard";
+import { VoteGallery } from "./VoteGallery";
 import type { Team } from "@/types/db";
 
 export const dynamic = "force-dynamic";
@@ -94,17 +94,17 @@ export default async function VotePage() {
             <ol className="mt-8 grid gap-6 sm:grid-cols-3 max-w-3xl">
               <Instr
                 n="01"
-                t="Pick three"
-                b="Tap any card to select. Tap again to deselect."
+                t="Open a card"
+                b="Click a card to read its full demo details."
               />
               <Instr
                 n="02"
-                t="Confirm"
-                b="We'll show your picks before locking the ballot."
+                t="Pick three"
+                b="Use the Vote button on a card to add it to your ballot."
               />
               <Instr
                 n="03"
-                t="Done"
+                t="Confirm"
                 b="One ballot per person. Votes are final."
               />
             </ol>
@@ -114,7 +114,7 @@ export default async function VotePage() {
             {open ? (
               <VoteGrid teams={teams} />
             ) : (
-              <Gallery teams={teams} />
+              <VoteGallery teams={teams} />
             )}
           </div>
         </div>
@@ -138,27 +138,3 @@ function Instr({ n, t, b }: { n: string; t: string; b: string }) {
   );
 }
 
-function Gallery({ teams }: { teams: Team[] }) {
-  if (teams.length === 0) {
-    return (
-      <div className="card-dark p-10 text-center max-w-xl mx-auto">
-        <span className="eyebrow">NO TEAMS YET</span>
-        <h2 className="text-[22px] font-semibold mt-2 text-text-on-dark">
-          The gallery's quiet — for now.
-        </h2>
-        <p className="mt-2 text-text-muted-dark">
-          Once captains register, their demos show up here.
-        </p>
-      </div>
-    );
-  }
-  return (
-    <ul role="list" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {teams.map((t) => (
-        <li key={t.id}>
-          <TeamCard team={t} variant="dark" showOpenLink />
-        </li>
-      ))}
-    </ul>
-  );
-}

@@ -3,6 +3,12 @@
 import Image from "next/image";
 import clsx from "clsx";
 import type { Team } from "@/types/db";
+import { VOTES_REQUIRED } from "@/lib/constants";
+
+type TeamCardData = Pick<
+  Team,
+  "id" | "name" | "tagline" | "members" | "demo_url" | "thumbnail_url" | "summary"
+>;
 
 export function TeamCard({
   team,
@@ -10,39 +16,66 @@ export function TeamCard({
   selected = false,
   selectionIndex,
   selectionTotal,
-  onToggle,
+  onOpen,
+  onVote,
+  voteDisabled = false,
   showOpenLink = false,
   tabIndex,
 }: {
-  team: Pick<
-    Team,
-    "id" | "name" | "tagline" | "members" | "demo_url" | "thumbnail_url" | "summary"
-  >;
+  team: TeamCardData;
   variant?: "light" | "dark";
   selected?: boolean;
   /** 1-based position of this card in the user's current picks. */
   selectionIndex?: number;
   /** Total picks required (denominator on the badge). */
   selectionTotal?: number;
-  onToggle?: () => void;
+  /** Click on the card surface (anywhere outside the Vote button) opens the demo detail modal. */
+  onOpen?: () => void;
+  /** Click on the bottom Vote button toggles the team in the user's ballot. */
+  onVote?: () => void;
+  /** True when this card is unselected AND the user has already used all picks. */
+  voteDisabled?: boolean;
   showOpenLink?: boolean;
   tabIndex?: number;
 }) {
-  const interactive = !!onToggle;
-  const Wrapper: "button" | "div" = interactive ? "button" : "div";
+  const interactive = !!onOpen;
   const isDark = variant === "dark";
+  const showVote = !!onVote;
+
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!interactive) return;
+    e.currentTarget.focus();
+    onOpen?.();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (!interactive) return;
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpen?.();
+    }
+  }
+
+  function handleVoteClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!onVote) return;
+    if (voteDisabled) return;
+    onVote();
+  }
 
   return (
-    <Wrapper
-      type={interactive ? "button" : undefined}
-      onClick={onToggle}
-      aria-pressed={interactive ? selected : undefined}
-      tabIndex={tabIndex}
+    <div
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? tabIndex ?? 0 : undefined}
+      onClick={interactive ? handleClick : undefined}
+      onKeyDown={interactive ? handleKeyDown : undefined}
+      aria-label={interactive ? `${team.name} — open demo details` : undefined}
       className={clsx(
         "group relative text-left w-full transition-all duration-150",
         isDark ? "card-dark" : "card-light",
         interactive && "cursor-pointer hover:-translate-y-0.5",
-        interactive &&
+        showVote &&
           selected &&
           (isDark
             ? "ring-2 ring-liatrio-green ring-offset-2 ring-offset-bg-dark shadow-[0_10px_40px_-6px_rgba(163,230,53,0.35)]"
@@ -54,7 +87,7 @@ export function TeamCard({
         alt={`${team.name} demo preview`}
         variant={variant}
       />
-      {interactive && selected && selectionIndex && selectionTotal && (
+      {showVote && selected && selectionIndex && selectionTotal && (
         <span
           aria-hidden
           className="absolute top-3 left-3 inline-flex items-center justify-center min-w-[44px] h-7 px-2.5 rounded-full bg-liatrio-green text-bg-dark text-[13px] font-bold tabular-nums tracking-tight shadow-[0_4px_14px_rgba(163,230,53,0.5)]"
@@ -72,7 +105,7 @@ export function TeamCard({
           >
             {team.name}
           </h3>
-          {interactive && (
+          {showVote && (
             <span
               aria-hidden
               className={clsx(
@@ -139,8 +172,56 @@ export function TeamCard({
             Open demo ↗
           </a>
         )}
+        {showVote && (
+          <VoteButton
+            selected={selected}
+            disabled={voteDisabled}
+            onClick={handleVoteClick}
+          />
+        )}
       </div>
-    </Wrapper>
+    </div>
+  );
+}
+
+function VoteButton({
+  selected,
+  disabled,
+  onClick,
+}: {
+  selected: boolean;
+  disabled: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const label = disabled
+    ? `${VOTES_REQUIRED} votes used`
+    : selected
+    ? "Voted ✓ — Remove"
+    : "Vote";
+  const ariaLabel = disabled
+    ? `Cannot vote — ${VOTES_REQUIRED} votes already used`
+    : selected
+    ? "Remove vote for this team"
+    : "Vote for this team";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={selected}
+      aria-label={ariaLabel}
+      className={clsx(
+        "btn w-full mt-1",
+        selected
+          ? "bg-liatrio-green/15 text-liatrio-green border border-liatrio-green/40 hover:bg-liatrio-green/25 hover:border-liatrio-green"
+          : disabled
+          ? "btn-secondary"
+          : "btn-blue",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 

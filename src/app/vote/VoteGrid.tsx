@@ -8,6 +8,7 @@ import { toast } from "@/components/Toaster";
 import { submitBallot } from "./actions";
 import type { Team } from "@/types/db";
 import { VOTES_REQUIRED } from "@/lib/constants";
+import { DemoModal } from "./DemoModal";
 
 export function VoteGrid({ teams }: { teams: Team[] }) {
   const router = useRouter();
@@ -15,6 +16,7 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
   const [pending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -99,7 +101,7 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
                   Ready to submit ↓
                 </span>
               ) : remaining === VOTES_REQUIRED ? (
-                "Tap any demo card to start picking."
+                "Open a card to read details, then tap Vote."
               ) : (
                 <>
                   Pick{" "}
@@ -138,7 +140,7 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
             {exactly3
               ? "You've picked three. Submit when you're sure — votes are final."
               : remaining === VOTES_REQUIRED
-              ? "You have 3 votes. Tap a demo card below to cast your first pick."
+              ? "You have 3 votes. Open a demo card to read details, then tap Vote."
               : `${remaining} ${remaining === 1 ? "vote" : "votes"} left — keep picking.`}
           </p>
         </div>
@@ -156,6 +158,8 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
           {teams.map((t) => {
             const idx = selected.indexOf(t.id);
             const isSelected = idx !== -1;
+            const voteDisabled =
+              !isSelected && selected.length >= VOTES_REQUIRED;
             return (
               <li key={t.id}>
                 <TeamCard
@@ -164,7 +168,9 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
                   selected={isSelected}
                   selectionIndex={isSelected ? idx + 1 : undefined}
                   selectionTotal={VOTES_REQUIRED}
-                  onToggle={() => toggle(t.id)}
+                  onOpen={() => setOpenTeamId(t.id)}
+                  onVote={() => toggle(t.id)}
+                  voteDisabled={voteDisabled}
                   showOpenLink
                 />
               </li>
@@ -172,6 +178,25 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
           })}
         </ul>
       )}
+
+      {openTeamId &&
+        (() => {
+          const team = teams.find((t) => t.id === openTeamId);
+          if (!team) return null;
+          const isSelected = selected.includes(team.id);
+          const voteDisabled =
+            !isSelected && selected.length >= VOTES_REQUIRED;
+          return (
+            <DemoModal
+              team={team}
+              selected={isSelected}
+              voteDisabled={voteDisabled}
+              showVote
+              onVote={() => toggle(team.id)}
+              onClose={() => setOpenTeamId(null)}
+            />
+          );
+        })()}
 
       {showConfirm && (
         <ConfirmModal
