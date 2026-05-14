@@ -67,8 +67,10 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
       });
       if (res.ok) {
         toast("success", "Your ballot is in. Thanks!");
-        router.push("/thanks");
-        router.refresh();
+        // Use a full navigation after the server action sets httpOnly cookies.
+        // This avoids occasional client-router races where the ballot records
+        // successfully but the voter remains visually stranded on /vote.
+        window.location.assign("/thanks");
       } else {
         setShowConfirm(false);
         if (res.reason === "duplicate") {
