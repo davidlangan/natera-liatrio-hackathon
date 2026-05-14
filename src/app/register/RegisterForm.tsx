@@ -609,7 +609,7 @@ function ConfirmationPreview({
 
       <div className="flex flex-wrap gap-3">
         <a className="btn btn-primary" href="/vote">
-          Confirm and view gallery →
+          Confirm and view demos →
         </a>
         <a className="btn btn-secondary" href={retryHref}>
           Edit again
