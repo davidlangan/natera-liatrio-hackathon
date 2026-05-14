@@ -86,19 +86,9 @@ function Tile({
 }) {
   const accentColor =
     accent === "green" ? "text-liatrio-green" : "text-natera-blue";
-  return (
-    <Link
-      href={disabled ? "#" : href}
-      aria-disabled={disabled}
-      onClick={(e) => {
-        if (disabled) e.preventDefault();
-      }}
-      className={`card-dark p-8 transition-all duration-150 flex flex-col gap-4 ${
-        disabled
-          ? "opacity-50 cursor-not-allowed"
-          : "hover:-translate-y-0.5 hover:border-opacity-60"
-      }`}
-    >
+
+  const inner = (
+    <>
       <span className={`eyebrow-strong ${accentColor}`}>{eyebrow}</span>
       <h2 className="text-[26px] sm:text-[30px] font-semibold leading-tight">
         {title}
@@ -107,6 +97,26 @@ function Tile({
         {body}
       </p>
       <span className={`mt-2 font-semibold ${accentColor}`}>{cta}</span>
+    </>
+  );
+
+  if (disabled) {
+    return (
+      <div
+        aria-disabled
+        className="card-dark p-8 flex flex-col gap-4 opacity-50 cursor-not-allowed"
+      >
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className="card-dark p-8 flex flex-col gap-4 transition-all duration-150 hover:-translate-y-0.5"
+    >
+      {inner}
     </Link>
   );
 }
