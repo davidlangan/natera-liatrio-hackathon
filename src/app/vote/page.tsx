@@ -6,9 +6,8 @@ import { redirect } from "next/navigation";
 import { BALLOT_COOKIE, VOTES_REQUIRED } from "@/lib/constants";
 import { verifyCookie } from "@/lib/hash";
 import { VoteGrid } from "./VoteGrid";
-import { Countdown } from "@/components/Countdown";
+import { TeamCard } from "@/components/TeamCard";
 import type { Team } from "@/types/db";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -54,27 +53,39 @@ export default async function VotePage() {
       <div className="band band-light">
         <Header variant="light" />
         <div className="band-inner">
-          <span className="eyebrow">VOTING</span>
+          <span className="eyebrow">{open ? "VOTING" : "DEMOS"}</span>
           <h1 className="h-display text-text-on-light mt-3">
-            Cast your vote for{" "}
-            <span className="h-emphasis">the best demo.</span>
+            {open ? (
+              <>
+                Cast your vote for{" "}
+                <span className="h-emphasis">the best demo.</span>
+              </>
+            ) : (
+              <>
+                Browse every{" "}
+                <span className="h-emphasis">demo on the ballot.</span>
+              </>
+            )}
           </h1>
           <p className="mt-5 max-w-xl text-text-muted-light leading-[1.6]">
-            Pick exactly {VOTES_REQUIRED} teams. No ranking — your three picks
-            count equally. You can only vote once.
+            {open
+              ? `Pick exactly ${VOTES_REQUIRED} teams. No ranking — your three picks count equally. You can only vote once.`
+              : "Open each team's demo to see what they built. Voting opens when the admin flips the switch."}
           </p>
 
-          <ol className="mt-8 grid gap-6 sm:grid-cols-3 max-w-3xl">
-            <Instr n="01" t="Pick three" b="Tap any card to select. Tap again to deselect." />
-            <Instr n="02" t="Confirm" b="We'll show your picks before locking the ballot." />
-            <Instr n="03" t="Watch live" b="The leaderboard updates instantly after submit." />
-          </ol>
+          {open && (
+            <ol className="mt-8 grid gap-6 sm:grid-cols-3 max-w-3xl">
+              <Instr n="01" t="Pick three" b="Tap any card to select. Tap again to deselect." />
+              <Instr n="02" t="Confirm" b="We'll show your picks before locking the ballot." />
+              <Instr n="03" t="Done" b="One ballot per person. Votes are final." />
+            </ol>
+          )}
 
           <div className="mt-10">
-            {!open ? (
-              <ClosedState closesAt={settings?.voting_closes_at ?? null} />
-            ) : (
+            {open ? (
               <VoteGrid teams={teams} />
+            ) : (
+              <Gallery teams={teams} />
             )}
           </div>
         </div>
@@ -98,37 +109,27 @@ function Instr({ n, t, b }: { n: string; t: string; b: string }) {
   );
 }
 
-function ClosedState({ closesAt }: { closesAt: string | null }) {
-  const past =
-    closesAt !== null && new Date(closesAt).getTime() < Date.now();
-  return (
-    <div className="card-light p-8 max-w-xl">
-      <span className="eyebrow">
-        {past ? "VOTING CLOSED" : "VOTING NOT OPEN YET"}
-      </span>
-      <h2 className="text-[22px] font-semibold mt-2">
-        {past
-          ? "Voting wrapped up. Head to the leaderboard."
-          : "Voting hasn't opened yet."}
-      </h2>
-      <p className="mt-2 text-text-muted-light">
-        {past
-          ? "Thanks to everyone who voted."
-          : "Check back when the admin flips the switch."}
-      </p>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Link href="/browse" className="btn btn-ghost-light">
-          Browse demos
-        </Link>
-        <Link href="/leaderboard" className="btn btn-blue">
-          See leaderboard →
-        </Link>
+function Gallery({ teams }: { teams: Team[] }) {
+  if (teams.length === 0) {
+    return (
+      <div className="card-light p-10 text-center max-w-xl mx-auto">
+        <span className="eyebrow">NO TEAMS YET</span>
+        <h2 className="text-[22px] font-semibold mt-2">
+          The gallery's quiet — for now.
+        </h2>
+        <p className="mt-2 text-text-muted-light">
+          Once captains register, their demos show up here.
+        </p>
       </div>
-      {closesAt && !past && (
-        <div className="mt-6">
-          <Countdown closesAt={closesAt} label="OPENS / CLOSES AT" compact />
-        </div>
-      )}
-    </div>
+    );
+  }
+  return (
+    <ul role="list" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {teams.map((t) => (
+        <li key={t.id}>
+          <TeamCard team={t} variant="light" showOpenLink />
+        </li>
+      ))}
+    </ul>
   );
 }

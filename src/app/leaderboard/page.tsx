@@ -1,34 +1,17 @@
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { LeaderboardLive } from "./LeaderboardLive";
-import { computeTopThreeWithOthers } from "@/lib/standings";
+import { redirect } from "next/navigation";
+import { isAdmin } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeaderboardPage() {
-  const { top, otherCount } = await computeTopThreeWithOthers();
-
-  return (
-    <main className="min-h-screen">
-      <div className="band band-dark">
-        <Header variant="dark" />
-        <div className="band-inner">
-          <span className="eyebrow-strong">LEADERBOARD</span>
-          <h1 className="h-display mt-3 max-w-3xl text-text-on-dark">
-            Live results.{" "}
-            <span className="h-emphasis">Top three only.</span>
-          </h1>
-          <p className="mt-5 max-w-xl text-text-muted-dark leading-[1.6]">
-            Standings refresh as votes come in — no manual reload required.
-            We deliberately hide rank numbers and anything below third place.
-          </p>
-
-          <div className="mt-12">
-            <LeaderboardLive initialStandings={top} initialNonTopCount={otherCount} />
-          </div>
-        </div>
-      </div>
-      <Footer variant="dark" />
-    </main>
-  );
+/**
+ * Public leaderboard URL is intentionally hidden. Admins are forwarded to the
+ * gated reveal view; everyone else lands on /admin (which prompts for the
+ * passcode), keeping voters insulated from intermediate standings so they
+ * aren't influenced before they cast their ballot.
+ */
+export default async function LeaderboardRedirect() {
+  if (await isAdmin()) {
+    redirect("/admin/leaderboard");
+  }
+  redirect("/admin");
 }

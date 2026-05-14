@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
@@ -105,11 +106,16 @@ export function AdminDashboard({
             Run the <span className="h-emphasis">event.</span>
           </h1>
         </div>
-        <form action={logoutAction}>
-          <button type="submit" className="btn btn-secondary">
-            Sign out
-          </button>
-        </form>
+        <div className="flex gap-2">
+          <Link href="/admin/leaderboard" className="btn btn-primary">
+            View leaderboard →
+          </Link>
+          <form action={logoutAction}>
+            <button type="submit" className="btn btn-secondary">
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* Switches */}

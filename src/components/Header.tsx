@@ -6,10 +6,8 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
 const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/browse", label: "Browse" },
+  { href: "/register", label: "Register" },
   { href: "/vote", label: "Vote" },
-  { href: "/leaderboard", label: "Leaderboard" },
 ];
 
 export function Header({ variant = "dark" }: { variant?: "dark" | "light" }) {

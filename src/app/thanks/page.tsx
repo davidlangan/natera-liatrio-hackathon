@@ -41,8 +41,8 @@ export default async function ThanksPage() {
             <span className="h-emphasis">Your picks are locked.</span>
           </h1>
           <p className="mt-5 max-w-xl text-text-muted-dark leading-[1.6]">
-            One vote per person — yours is in. Tag along to the live leaderboard
-            to watch the top three shake out.
+            One vote per person — yours is in. Results will be unveiled at the
+            end of the hackathon. No peeking 😉
           </p>
 
           {picks.length > 0 && (
@@ -62,10 +62,10 @@ export default async function ThanksPage() {
           )}
 
           <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/leaderboard" className="btn btn-primary">
-              See live leaderboard →
+            <Link href="/" className="btn btn-primary">
+              Back to home
             </Link>
-            <Link href="/browse" className="btn btn-secondary">
+            <Link href="/vote" className="btn btn-secondary">
               Browse all demos
             </Link>
           </div>
