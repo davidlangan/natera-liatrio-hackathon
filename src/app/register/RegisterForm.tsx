@@ -16,7 +16,7 @@ export function RegisterForm({
     id: string;
     name: string;
     members: string[];
-    demo_url: string;
+    demo_url: string | null;
     tagline: string | null;
   };
 }) {
@@ -65,14 +65,13 @@ export function RegisterForm({
       />
 
       <Field
-        label="Demo URL"
+        label="Demo URL (optional)"
         name="demo_url"
         type="url"
         placeholder="https://your-demo.example.com or https://gitlab.com/org/project"
-        defaultValue={editing?.demo_url}
+        defaultValue={editing?.demo_url ?? ""}
         error={state.fieldErrors?.demo_url}
-        required
-        help="A live web app URL or a GitLab repo. We'll auto-generate a thumbnail."
+        help="A live web app URL or a GitLab repo. We'll try to auto-generate a thumbnail — leave blank if you don't have one yet."
       />
 
       <Field

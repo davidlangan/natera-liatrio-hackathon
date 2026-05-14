@@ -84,7 +84,7 @@ export async function updateTeam(input: {
   id: string;
   name?: string;
   tagline?: string | null;
-  demo_url?: string;
+  demo_url?: string | null;
 }) {
   await assertAdmin();
   const admin = getAdminSupabase();

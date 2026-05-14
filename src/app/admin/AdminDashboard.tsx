@@ -320,12 +320,12 @@ function Row({
   row: Row;
   pending: boolean;
   onDelete: () => void;
-  onEdit: (patch: { name?: string; tagline?: string | null; demo_url?: string }) => void;
+  onEdit: (patch: { name?: string; tagline?: string | null; demo_url?: string | null }) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(row.name);
   const [tagline, setTagline] = useState(row.tagline ?? "");
-  const [url, setUrl] = useState(row.demo_url);
+  const [url, setUrl] = useState(row.demo_url ?? "");
 
   return (
     <tr className="border-t border-border-dark align-top">
@@ -357,9 +357,10 @@ function Row({
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            placeholder="(optional)"
             className="input-dark text-[13px] py-1.5"
           />
-        ) : (
+        ) : row.demo_url ? (
           <a
             href={row.demo_url}
             target="_blank"
@@ -368,6 +369,8 @@ function Row({
           >
             {row.demo_url}
           </a>
+        ) : (
+          <span className="text-text-muted-dark">—</span>
         )}
       </td>
       <td className="py-3 pr-4 text-right tabular-nums text-liatrio-green font-semibold">
@@ -384,7 +387,11 @@ function Row({
                 className="btn btn-blue text-[12px] py-1.5 px-3"
                 disabled={pending}
                 onClick={() => {
-                  onEdit({ name, tagline: tagline || null, demo_url: url });
+                  onEdit({
+                    name,
+                    tagline: tagline || null,
+                    demo_url: url.trim() ? url.trim() : null,
+                  });
                   setEditing(false);
                 }}
               >

@@ -6,8 +6,13 @@
  *    Falls back to a microlink screenshot if the API call fails.
  * 2. Anything else → microlink.io (free tier, no key required).
  *
- * The server-side URL reachability HEAD check happens in the register
- * server action; this module only generates the preview metadata.
+ * The demo URL is OPTIONAL on registration. Callers must only invoke
+ * `generatePreview` when they actually have a non-empty URL. Both helpers
+ * swallow network errors and return null/false rather than throwing, so a
+ * real-but-temporarily-unreachable URL never blocks form submission.
+ *
+ * `isUrlReachable` is retained as an exported helper for ad-hoc tooling
+ * (e.g. seed scripts) but is no longer wired into the register action.
  */
 
 export type PreviewResult = {

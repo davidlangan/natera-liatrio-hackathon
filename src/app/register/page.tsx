@@ -26,7 +26,7 @@ export default async function RegisterPage({
         id: string;
         name: string;
         members: string[];
-        demo_url: string;
+        demo_url: string | null;
         tagline: string | null;
       }
     | undefined;

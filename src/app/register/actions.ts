@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import { getAdminSupabase } from "@/lib/supabase/server";
-import { isUrlReachable, generatePreview } from "@/lib/url-preview";
+import { generatePreview, type PreviewResult } from "@/lib/url-preview";
 
 const CAPTAIN_COOKIE_PREFIX = "nh_captain_";
 
@@ -18,7 +18,7 @@ export type RegisterFormState = {
     name: string;
     tagline: string | null;
     members: string[];
-    demo_url: string;
+    demo_url: string | null;
     thumbnail_url: string | null;
     summary: string | null;
   };
@@ -58,9 +58,9 @@ export async function registerTeam(
   if (members.length < 1) fieldErrors.members = "Add at least one member.";
   if (members.length > 10)
     fieldErrors.members = "Maximum of 10 members.";
-  if (!demo_url) fieldErrors.demo_url = "Demo URL is required.";
-  else if (!isValidUrl(demo_url))
-    fieldErrors.demo_url = "Use an http(s) URL.";
+  // demo_url is optional. If supplied, it must at least parse as http(s).
+  if (demo_url && !isValidUrl(demo_url))
+    fieldErrors.demo_url = "Use an http(s) URL, or leave this field blank.";
   if (tagline && tagline.length > 120)
     fieldErrors.tagline = "Tagline must be 120 characters or fewer.";
 
@@ -82,18 +82,24 @@ export async function registerTeam(
     };
   }
 
-  const reachable = await isUrlReachable(demo_url);
-  if (!reachable) {
-    return {
-      ok: false,
-      fieldErrors: {
-        demo_url:
-          "We couldn't reach that URL. Double-check it's live and publicly accessible.",
-      },
-    };
+  // Only attempt preview enrichment when a URL was supplied. A real-but-
+  // unreachable URL must not block submission — generatePreview already
+  // catches network errors and returns nulls, but we additionally guard
+  // against unexpected throws so the form never rejects on enrichment.
+  const demoUrlValue: string | null = demo_url || null;
+  let preview: PreviewResult = {
+    summary: null,
+    thumbnail_url: null,
+    source: "fallback",
+  };
+  if (demoUrlValue) {
+    try {
+      preview = await generatePreview(demoUrlValue);
+    } catch {
+      // Treat any unexpected enrichment failure as "no preview available".
+      preview = { summary: null, thumbnail_url: null, source: "fallback" };
+    }
   }
-
-  const preview = await generatePreview(demo_url);
   const captainToken = crypto.randomBytes(24).toString("hex");
 
   let teamId = editingId;
@@ -116,7 +122,7 @@ export async function registerTeam(
       .update({
         name,
         members,
-        demo_url,
+        demo_url: demoUrlValue,
         tagline,
         thumbnail_url: preview.thumbnail_url,
         summary: preview.summary,
@@ -137,7 +143,7 @@ export async function registerTeam(
       .insert({
         name,
         members,
-        demo_url,
+        demo_url: demoUrlValue,
         tagline,
         thumbnail_url: preview.thumbnail_url,
         summary: preview.summary,
@@ -180,7 +186,7 @@ export async function registerTeam(
       name,
       tagline,
       members,
-      demo_url,
+      demo_url: demoUrlValue,
       thumbnail_url: preview.thumbnail_url,
       summary: preview.summary,
     },

@@ -10,7 +10,7 @@ export type Team = {
   id: string;
   name: string;
   members: string[];
-  demo_url: string;
+  demo_url: string | null;
   tagline: string | null;
   thumbnail_url: string | null;
   summary: string | null;
@@ -35,7 +35,7 @@ export type Standing = {
   name: string;
   tagline: string | null;
   thumbnail_url: string | null;
-  demo_url: string;
+  demo_url: string | null;
   votes: number;
   pct: number;
 };

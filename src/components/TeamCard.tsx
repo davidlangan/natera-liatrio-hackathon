@@ -123,7 +123,7 @@ export function TeamCard({
             </span>
           )}
         </div>
-        {showOpenLink && (
+        {showOpenLink && team.demo_url && (
           <a
             href={team.demo_url}
             target="_blank"
