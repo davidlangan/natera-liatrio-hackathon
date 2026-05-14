@@ -8,103 +8,151 @@ export const dynamic = "force-dynamic";
 
 async function getEventState() {
   const supabase = await getServerSupabase();
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("registration_open, voting_open")
-    .eq("id", true)
-    .maybeSingle();
+  const [{ data: settings }, { count: teamCount }] = await Promise.all([
+    supabase
+      .from("settings")
+      .select("registration_open, voting_open")
+      .eq("id", true)
+      .maybeSingle(),
+    supabase.from("teams").select("id", { count: "exact", head: true }),
+  ]);
   return {
     regOpen: !!settings?.registration_open,
     votingOpen: !!settings?.voting_open,
+    teamCount: teamCount ?? 0,
   };
 }
 
 export default async function HomePage() {
-  const { regOpen, votingOpen } = await getEventState();
+  const { regOpen, votingOpen, teamCount } = await getEventState();
 
   return (
-    <main className="band band-dark min-h-screen">
-      <Header variant="dark" />
+    <main className="relative min-h-screen overflow-hidden mesh-bg">
+      <HeroOrbits />
 
-      <section className="relative band-inner">
-        <HeroOrbits />
-        <div className="relative max-w-4xl mx-auto text-center">
-          <span className="eyebrow-strong">AI HACKATHON</span>
-          <h1 className="h-display text-text-on-dark mt-4">
-            Cast your vote for{" "}
-            <span className="h-emphasis">the best demo.</span>
+      <div className="relative z-10">
+        <Header variant="dark" />
+
+        <section className="mx-auto max-w-6xl px-6 pt-10 pb-24 sm:pt-16 sm:pb-32">
+          {/* Event badge */}
+          <div className="flex justify-center">
+            <span className="event-badge">
+              <span className="dot" aria-hidden />
+              Natera × Liatrio · AI Hackathon 2026
+            </span>
+          </div>
+
+          {/* Hero headline */}
+          <h1 className="h-hero text-center mt-8 text-balance text-text-on-dark">
+            Build it. Ship it.
+            <br />
+            <span className="h-gradient">Vote for it.</span>
           </h1>
-          <p className="mt-5 mx-auto max-w-xl text-text-muted-dark text-[16px] sm:text-[17px] leading-[1.6]">
-            Register your team. Then pick three demos you loved. Equal weight,
-            no rankings, one ballot per person.
+
+          <p className="mx-auto mt-7 max-w-xl text-center text-text-muted-dark text-[17px] sm:text-[19px] leading-[1.55] text-pretty">
+            Submit your team's demo or cast your vote for the best AI work of
+            the day.
           </p>
-        </div>
 
-        <div className="relative mt-12 grid gap-6 sm:grid-cols-2 max-w-3xl mx-auto">
-          <Tile
-            href="/register"
-            eyebrow="TAB 1"
-            title="Register your team"
-            body="Submit your team name, members, and a link to your demo or repo. Captains can edit until voting opens."
-            cta={regOpen ? "Get on the ballot →" : "Registration closed"}
-            disabled={!regOpen}
-            accent="green"
-          />
-          <Tile
-            href="/vote"
-            eyebrow="TAB 2"
-            title="Vote on demos"
-            body="Open each team's demo, then pick exactly three favorites. One ballot per person; votes are final."
-            cta={votingOpen ? "Cast your vote →" : "Browse demos"}
-            disabled={false}
-            accent="blue"
-          />
-        </div>
-      </section>
+          {/* The two giant CTA buttons */}
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 max-w-3xl mx-auto">
+            <CtaButton
+              href="/register"
+              label="Submit Demo"
+              caption={regOpen ? "Get on the ballot" : "Registration closed"}
+              tone="green"
+              disabled={!regOpen}
+            />
+            <CtaButton
+              href="/vote"
+              label="Vote"
+              caption={
+                votingOpen
+                  ? "Cast your three picks"
+                  : teamCount > 0
+                  ? "Browse the demos"
+                  : "Voting opens soon"
+              }
+              tone="blue"
+              disabled={false}
+            />
+          </div>
 
-      <Footer variant="dark" />
+          {/* Quick stats / footnote */}
+          <div className="mt-16 flex justify-center">
+            <div className="flex items-center gap-6 text-[13px] text-text-dim-dark">
+              <Stat label="Teams registered" value={teamCount} />
+              <span className="w-px h-5 bg-border-dark" aria-hidden />
+              <Stat
+                label="Picks per ballot"
+                value={3}
+                accent="text-liatrio-green"
+              />
+              <span className="w-px h-5 bg-border-dark" aria-hidden />
+              <Stat
+                label="Ballots per person"
+                value={1}
+                accent="text-natera-blue"
+              />
+            </div>
+          </div>
+        </section>
+
+        <Footer variant="dark" />
+      </div>
     </main>
   );
 }
 
-function Tile({
+function CtaButton({
   href,
-  eyebrow,
-  title,
-  body,
-  cta,
+  label,
+  caption,
+  tone,
   disabled,
-  accent,
 }: {
   href: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-  cta: string;
+  label: string;
+  caption: string;
+  tone: "green" | "blue";
   disabled: boolean;
-  accent: "green" | "blue";
 }) {
-  const accentColor =
-    accent === "green" ? "text-liatrio-green" : "text-natera-blue";
-
   const inner = (
     <>
-      <span className={`eyebrow-strong ${accentColor}`}>{eyebrow}</span>
-      <h2 className="text-[26px] sm:text-[30px] font-semibold leading-tight">
-        {title}
-      </h2>
-      <p className="text-text-muted-dark leading-[1.55] text-[15px] flex-1">
-        {body}
-      </p>
-      <span className={`mt-2 font-semibold ${accentColor}`}>{cta}</span>
+      <span className="cta-sub">
+        {tone === "green" ? "Step 1" : "Step 2"}
+      </span>
+      <span className="text-[34px] sm:text-[40px] font-black leading-none tracking-tight">
+        {label}
+      </span>
+      <span className="cta-arrow">
+        {caption}
+        {!disabled && (
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M5 12h14M13 5l7 7-7 7" />
+          </svg>
+        )}
+      </span>
     </>
   );
 
   if (disabled) {
     return (
       <div
+        className="cta-mega cta-disabled"
         aria-disabled
-        className="card-dark p-8 flex flex-col gap-4 opacity-50 cursor-not-allowed"
+        role="button"
+        tabIndex={-1}
       >
         {inner}
       </div>
@@ -114,9 +162,30 @@ function Tile({
   return (
     <Link
       href={href}
-      className="card-dark p-8 flex flex-col gap-4 transition-all duration-150 hover:-translate-y-0.5"
+      className={`cta-mega ${tone === "green" ? "cta-green" : "cta-blue"}`}
     >
       {inner}
     </Link>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  accent = "text-text-on-dark",
+}: {
+  label: string;
+  value: number;
+  accent?: string;
+}) {
+  return (
+    <span className="flex items-baseline gap-2">
+      <span className={`text-[16px] font-bold tabular-nums ${accent}`}>
+        {value}
+      </span>
+      <span className="uppercase tracking-eyebrow text-[11px] text-text-muted-dark">
+        {label}
+      </span>
+    </span>
   );
 }

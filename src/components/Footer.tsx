@@ -1,30 +1,26 @@
-import clsx from "clsx";
 import { LiatrioLogo, NateraLogo } from "./Logos";
 import { EVENT_DATE } from "@/lib/constants";
 
-export function Footer({ variant = "dark" }: { variant?: "dark" | "light" }) {
-  const isLight = variant === "light";
+/**
+ * Footer is always dark for the same reason as Header — the official Liatrio
+ * mark is reverse-preferred. Both light- and dark-variant pages anchor on a
+ * consistent dark brand strip at the bottom.
+ *
+ * The `variant` prop is accepted for API parity with existing callers but
+ * has no visual effect; treatment is uniform across pages.
+ */
+export function Footer({ variant: _variant = "dark" }: { variant?: "dark" | "light" }) {
   return (
-    <footer
-      className={clsx(
-        "w-full border-t",
-        isLight
-          ? "border-border-light bg-bg-light text-text-muted-light"
-          : "border-border-dark bg-bg-dark text-text-muted-dark",
-      )}
-    >
-      <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col items-center gap-4">
-        <div className="flex items-center gap-3 opacity-90">
+    <footer className="w-full border-t border-border-dark bg-bg-darker text-text-muted-dark">
+      <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col items-center gap-5">
+        <div className="flex items-center gap-4 sm:gap-5 opacity-95">
           <NateraLogo className="h-6 w-auto" />
-          <span aria-hidden className="text-base font-light">
+          <span aria-hidden className="text-base font-light text-text-dim-dark">
             ×
           </span>
-          <LiatrioLogo
-            className="h-6 w-auto"
-            variant={isLight ? "color" : "white"}
-          />
+          <LiatrioLogo className="h-5 w-auto" />
         </div>
-        <p className="text-[12px] tracking-eyebrow uppercase">
+        <p className="text-[11px] tracking-eyebrow uppercase text-text-dim-dark">
           Internal · AI Hackathon · {EVENT_DATE}
         </p>
       </div>

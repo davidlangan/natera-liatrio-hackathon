@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Natera × Liatrio · AI Hackathon Voting",
   description:
-    "Internal voting dashboard for the Natera × Liatrio AI Hackathon. Browse demos and cast your vote for the best three.",
+    "Internal voting dashboard for the Natera × Liatrio AI Hackathon. Submit your demo and cast your vote for the best three.",
   icons: {
     icon: "/favicon.svg",
   },
@@ -23,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body className="font-sans antialiased">
         {children}
         <Toaster />

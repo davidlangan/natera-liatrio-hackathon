@@ -10,6 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
+          "var(--font-inter)",
           "Inter",
           "SF Pro Text",
           "system-ui",
@@ -21,11 +22,14 @@ const config: Config = {
       colors: {
         // Backgrounds
         "bg-dark": "#0a0e14",
+        "bg-darker": "#06090e",
         "bg-light": "#f4f7fa",
         "surface-dark": "#11161d",
+        "surface-dark-2": "#161c26",
         "surface-light": "#ffffff",
         // Borders
         "border-dark": "#1f2630",
+        "border-dark-2": "#2a3340",
         "border-light": "#e3e8ef",
         // Brand
         "natera-blue": "#00A0DC",
@@ -35,6 +39,7 @@ const config: Config = {
         // Text
         "text-on-dark": "#ffffff",
         "text-muted-dark": "#94a3b8",
+        "text-dim-dark": "#64748b",
         "text-on-light": "#0f172a",
         "text-muted-light": "#475569",
         // Status

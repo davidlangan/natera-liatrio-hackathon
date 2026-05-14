@@ -1,34 +1,32 @@
 import Image from "next/image";
 
+/**
+ * Official brand marks. Both PNGs ship with transparent backgrounds and are
+ * "reverse-preferred" — i.e. designed to sit on a dark surface (the Liatrio
+ * mark is a white wordmark + green flame). Render them inside a dark strip
+ * regardless of the surrounding page tone.
+ */
 export function NateraLogo({ className = "h-8 w-auto" }: { className?: string }) {
   return (
     <Image
-      src="/logos/natera.svg"
+      src="/logos/natera.png"
       alt="Natera"
-      width={340}
-      height={96}
+      width={1024}
+      height={266}
       className={className}
       priority
     />
   );
 }
 
-export function LiatrioLogo({
-  className = "h-8 w-auto",
-  variant = "color",
-}: {
-  className?: string;
-  variant?: "color" | "white";
-}) {
-  // The color SVG has currentColor on the wordmark so it adapts to text color.
+export function LiatrioLogo({ className = "h-8 w-auto" }: { className?: string }) {
   return (
     <Image
-      src="/logos/liatrio.svg"
+      src="/logos/liatrio.png"
       alt="Liatrio"
-      width={320}
-      height={96}
+      width={1024}
+      height={362}
       className={className}
-      style={variant === "white" ? { color: "#ffffff" } : { color: "#0f172a" }}
       priority
     />
   );
