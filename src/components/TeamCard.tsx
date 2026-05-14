@@ -8,6 +8,8 @@ export function TeamCard({
   team,
   variant = "light",
   selected = false,
+  selectionIndex,
+  selectionTotal,
   onToggle,
   showOpenLink = false,
   tabIndex,
@@ -18,12 +20,17 @@ export function TeamCard({
   >;
   variant?: "light" | "dark";
   selected?: boolean;
+  /** 1-based position of this card in the user's current picks. */
+  selectionIndex?: number;
+  /** Total picks required (denominator on the badge). */
+  selectionTotal?: number;
   onToggle?: () => void;
   showOpenLink?: boolean;
   tabIndex?: number;
 }) {
   const interactive = !!onToggle;
   const Wrapper: "button" | "div" = interactive ? "button" : "div";
+  const isDark = variant === "dark";
 
   return (
     <Wrapper
@@ -32,12 +39,14 @@ export function TeamCard({
       aria-pressed={interactive ? selected : undefined}
       tabIndex={tabIndex}
       className={clsx(
-        "group text-left w-full transition-all duration-150",
-        variant === "light" ? "card-light" : "card-dark",
+        "group relative text-left w-full transition-all duration-150",
+        isDark ? "card-dark" : "card-light",
         interactive && "cursor-pointer hover:-translate-y-0.5",
         interactive &&
           selected &&
-          "ring-2 ring-liatrio-green ring-offset-2 ring-offset-bg-light shadow-[0_8px_30px_rgba(163,230,53,0.15)]",
+          (isDark
+            ? "ring-2 ring-liatrio-green ring-offset-2 ring-offset-bg-dark shadow-[0_10px_40px_-6px_rgba(163,230,53,0.35)]"
+            : "ring-2 ring-liatrio-green ring-offset-2 ring-offset-bg-light shadow-[0_8px_30px_rgba(163,230,53,0.15)]"),
       )}
     >
       <Thumbnail
@@ -45,12 +54,20 @@ export function TeamCard({
         alt={`${team.name} demo preview`}
         variant={variant}
       />
+      {interactive && selected && selectionIndex && selectionTotal && (
+        <span
+          aria-hidden
+          className="absolute top-3 left-3 inline-flex items-center justify-center min-w-[44px] h-7 px-2.5 rounded-full bg-liatrio-green text-bg-dark text-[13px] font-bold tabular-nums tracking-tight shadow-[0_4px_14px_rgba(163,230,53,0.5)]"
+        >
+          {selectionIndex}/{selectionTotal}
+        </span>
+      )}
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <h3
             className={clsx(
               "text-[18px] font-semibold leading-tight",
-              variant === "light" ? "text-text-on-light" : "text-text-on-dark",
+              isDark ? "text-text-on-dark" : "text-text-on-light",
             )}
           >
             {team.name}
@@ -62,9 +79,9 @@ export function TeamCard({
                 "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border transition-colors",
                 selected
                   ? "bg-liatrio-green border-liatrio-green text-bg-dark"
-                  : variant === "light"
-                  ? "border-border-light text-transparent"
-                  : "border-border-dark text-transparent",
+                  : isDark
+                  ? "border-border-dark text-transparent group-hover:border-liatrio-green/60"
+                  : "border-border-light text-transparent group-hover:border-liatrio-green/60",
               )}
             >
               ✓
@@ -75,9 +92,7 @@ export function TeamCard({
           <p
             className={clsx(
               "text-[14px] leading-[1.5]",
-              variant === "light"
-                ? "text-text-muted-light"
-                : "text-text-muted-dark",
+              isDark ? "text-text-muted-dark" : "text-text-muted-light",
             )}
           >
             {team.tagline}
@@ -89,9 +104,9 @@ export function TeamCard({
               key={m}
               className={clsx(
                 "px-2 py-0.5 rounded-full text-[12px]",
-                variant === "light"
-                  ? "bg-[#eef2f7] text-text-on-light"
-                  : "bg-[#1a2128] text-text-muted-dark",
+                isDark
+                  ? "bg-[#1a2128] text-text-muted-dark"
+                  : "bg-[#eef2f7] text-text-on-light",
               )}
             >
               {m}
@@ -101,9 +116,7 @@ export function TeamCard({
             <span
               className={clsx(
                 "px-2 py-0.5 rounded-full text-[12px]",
-                variant === "light"
-                  ? "text-text-muted-light"
-                  : "text-text-muted-dark",
+                isDark ? "text-text-muted-dark" : "text-text-muted-light",
               )}
             >
               +{team.members.length - 6} more
@@ -118,9 +131,9 @@ export function TeamCard({
             onClick={(e) => e.stopPropagation()}
             className={clsx(
               "inline-flex items-center gap-1 text-[14px] font-medium",
-              variant === "light"
-                ? "text-natera-blue hover:text-natera-blue-deep"
-                : "text-natera-blue hover:text-liatrio-green",
+              isDark
+                ? "text-natera-blue hover:text-liatrio-green"
+                : "text-natera-blue hover:text-natera-blue-deep",
             )}
           >
             Open demo ↗

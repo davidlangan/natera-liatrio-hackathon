@@ -118,10 +118,10 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-[14px] font-medium mb-2 text-text-on-light">
+      <span className="block text-[14px] font-medium mb-2 text-text-on-dark">
         {label}
         {required && (
-          <span className="text-natera-blue ml-1" aria-hidden>
+          <span className="text-liatrio-green ml-1" aria-hidden>
             *
           </span>
         )}
@@ -133,11 +133,11 @@ function Field({
         placeholder={placeholder}
         maxLength={maxLength}
         required={required}
-        className="input"
+        className="input-dark"
         aria-invalid={!!error}
       />
       {help && !error && (
-        <p className="mt-1.5 text-[12px] text-text-muted-light">{help}</p>
+        <p className="mt-1.5 text-[12px] text-text-muted-dark">{help}</p>
       )}
       {error && (
         <p role="alert" className="mt-1.5 text-[13px] text-warning">
@@ -175,12 +175,12 @@ function ConfirmationPreview({
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <span className="eyebrow">PREVIEW</span>
-        <h2 className="h-section mt-2">
+        <span className="eyebrow-green">PREVIEW</span>
+        <h2 className="h-section mt-2 text-text-on-dark">
           Here's what voters will see for{" "}
           <span className="h-emphasis">"{preview.name}".</span>
         </h2>
-        <p className="text-text-muted-light mt-2">
+        <p className="text-text-muted-dark mt-2">
           Looks good? You're all set. Need to tweak it? Edit again while
           registration is open.
         </p>
@@ -196,15 +196,15 @@ function ConfirmationPreview({
           thumbnail_url: preview.thumbnail_url,
           summary: preview.summary,
         }}
-        variant="light"
+        variant="dark"
         showOpenLink
       />
 
       <div className="flex flex-wrap gap-3">
-        <a className="btn btn-primary" href="/browse">
+        <a className="btn btn-primary" href="/vote">
           Confirm and view gallery →
         </a>
-        <a className="btn btn-ghost-light" href={retryHref}>
+        <a className="btn btn-secondary" href={retryHref}>
           Edit again
         </a>
       </div>

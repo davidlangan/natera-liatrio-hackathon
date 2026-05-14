@@ -45,6 +45,7 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
     });
   }
 
+  const remaining = VOTES_REQUIRED - selected.length;
   const exactly3 = selected.length === VOTES_REQUIRED;
   const picksDetail = selected
     .map((id) => teams.find((t) => t.id === id))
@@ -84,28 +85,64 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-text-muted-light text-[14px]">
+      {/* Sticky live counter that follows the user down the page */}
+      <div className="sticky top-0 z-30 -mx-6 px-6 py-3 backdrop-blur-md bg-[rgba(10,14,20,0.78)] border-b border-border-dark/60">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <CounterPill selected={selected.length} />
             <span
               aria-live="polite"
-              className="font-semibold text-natera-blue tabular-nums"
+              className="text-[14px] text-text-muted-dark"
             >
-              {selected.length}
-            </span>{" "}
-            of {VOTES_REQUIRED} picks selected
+              {exactly3 ? (
+                <span className="text-liatrio-green font-semibold">
+                  Ready to submit ↓
+                </span>
+              ) : remaining === VOTES_REQUIRED ? (
+                "Tap any demo card to start picking."
+              ) : (
+                <>
+                  Pick{" "}
+                  <span className="text-text-on-dark font-semibold tabular-nums">
+                    {remaining}
+                  </span>{" "}
+                  more
+                </>
+              )}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-blue"
+            onClick={onSubmit}
+            disabled={!exactly3 || pending || !fingerprint}
+            aria-disabled={!exactly3 || pending || !fingerprint}
+          >
+            {pending
+              ? "Submitting…"
+              : exactly3
+              ? "Submit ballot →"
+              : `Pick ${remaining} more`}
+          </button>
+        </div>
+      </div>
+
+      {/* Big starting prompt above the grid */}
+      <div className="card-dark p-6 sm:p-7 flex flex-wrap items-center gap-5">
+        <BigCount selected={selected.length} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] text-text-muted-dark uppercase tracking-eyebrow font-semibold">
+            {exactly3 ? "Your ballot is ready" : "Votes remaining"}
+          </p>
+          <p className="text-text-on-dark text-[18px] sm:text-[20px] font-semibold mt-1 leading-snug">
+            {exactly3
+              ? "You've picked three. Submit when you're sure — votes are final."
+              : remaining === VOTES_REQUIRED
+              ? "You have 3 votes. Tap a demo card below to cast your first pick."
+              : `${remaining} ${remaining === 1 ? "vote" : "votes"} left — keep picking.`}
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={onSubmit}
-          disabled={!exactly3 || pending || !fingerprint}
-          aria-disabled={!exactly3 || pending || !fingerprint}
-        >
-          {pending ? "Submitting…" : "Submit ballot →"}
-        </button>
-      </header>
+      </div>
 
       {teams.length === 0 ? (
         <EmptyState />
@@ -116,17 +153,23 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
           aria-multiselectable="true"
           className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {teams.map((t) => (
-            <li key={t.id}>
-              <TeamCard
-                team={t}
-                variant="light"
-                selected={selected.includes(t.id)}
-                onToggle={() => toggle(t.id)}
-                showOpenLink
-              />
-            </li>
-          ))}
+          {teams.map((t) => {
+            const idx = selected.indexOf(t.id);
+            const isSelected = idx !== -1;
+            return (
+              <li key={t.id}>
+                <TeamCard
+                  team={t}
+                  variant="dark"
+                  selected={isSelected}
+                  selectionIndex={isSelected ? idx + 1 : undefined}
+                  selectionTotal={VOTES_REQUIRED}
+                  onToggle={() => toggle(t.id)}
+                  showOpenLink
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -142,14 +185,50 @@ export function VoteGrid({ teams }: { teams: Team[] }) {
   );
 }
 
+function CounterPill({ selected }: { selected: number }) {
+  const remaining = VOTES_REQUIRED - selected;
+  const done = remaining === 0;
+  return (
+    <span
+      aria-live="polite"
+      className={
+        done
+          ? "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-bold bg-liatrio-green text-bg-dark"
+          : "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-bold bg-surface-dark border border-border-dark text-text-on-dark"
+      }
+    >
+      <span className="tabular-nums">
+        {selected}/{VOTES_REQUIRED}
+      </span>
+      <span className="uppercase tracking-eyebrow text-[11px] opacity-80">
+        picks
+      </span>
+    </span>
+  );
+}
+
+function BigCount({ selected }: { selected: number }) {
+  const remaining = VOTES_REQUIRED - selected;
+  return (
+    <div className="flex items-baseline gap-1">
+      <span className="text-[64px] sm:text-[72px] font-black leading-none tabular-nums text-liatrio-green">
+        {remaining}
+      </span>
+      <span className="text-text-muted-dark text-[18px] font-semibold tabular-nums">
+        /{VOTES_REQUIRED}
+      </span>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
-    <div className="card-light p-10 text-center max-w-xl mx-auto">
+    <div className="card-dark p-10 text-center max-w-xl mx-auto">
       <span className="eyebrow">NO TEAMS YET</span>
-      <h2 className="text-[22px] font-semibold mt-2">
+      <h2 className="text-[22px] font-semibold mt-2 text-text-on-dark">
         Voting can't start without teams.
       </h2>
-      <p className="mt-2 text-text-muted-light">
+      <p className="mt-2 text-text-muted-dark">
         Once captains register, their demos show up here.
       </p>
     </div>
@@ -172,37 +251,41 @@ function ConfirmModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
-      className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4 bg-black/50 animate-fade-in"
+      className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="card-light w-full max-w-md p-6 sm:p-8 animate-slide-up">
+      <div className="card-dark w-full max-w-md p-6 sm:p-8 animate-slide-up">
         <span className="eyebrow">CONFIRM YOUR BALLOT</span>
-        <h2 id="confirm-title" className="h-section mt-2 text-[24px] sm:text-[28px]">
+        <h2
+          id="confirm-title"
+          className="h-section mt-2 text-[24px] sm:text-[28px] text-text-on-dark"
+        >
           You're voting for{" "}
           <span className="h-emphasis">these three.</span>
         </h2>
-        <p className="mt-3 text-text-muted-light">
-          Once you confirm, your ballot is final.
+        <p className="mt-3 text-text-muted-dark leading-[1.55]">
+          All submissions are final. You won't be able to change your vote
+          after this. Confirm?
         </p>
         <ul className="mt-5 space-y-2">
           {picks.map((p, i) => (
             <li
               key={p.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-[#eef2f7]"
+              className="flex items-center gap-3 p-3 rounded-lg bg-surface-dark-2 border border-border-dark"
             >
-              <span className="text-natera-blue font-semibold tabular-nums">
+              <span className="text-liatrio-green font-bold tabular-nums text-[18px] leading-none">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="font-medium">{p.name}</span>
+              <span className="font-medium text-text-on-dark">{p.name}</span>
             </li>
           ))}
         </ul>
         <div className="mt-6 flex gap-3 justify-end">
           <button
             type="button"
-            className="btn btn-ghost-light"
+            className="btn btn-secondary"
             onClick={onCancel}
             disabled={pending}
           >
@@ -210,7 +293,7 @@ function ConfirmModal({
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-blue"
             onClick={onConfirm}
             disabled={pending}
           >
