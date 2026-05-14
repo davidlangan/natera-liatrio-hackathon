@@ -563,10 +563,10 @@ function SubmitButton({
       aria-disabled={disabled}
     >
       {pending
-        ? "Generating preview…"
+        ? "Submitting…"
         : editing
         ? "Save changes"
-        : "Generate preview"}
+        : "Submit Demo"}
     </button>
   );
 }
